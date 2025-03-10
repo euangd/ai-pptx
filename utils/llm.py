@@ -1,7 +1,7 @@
 from openai import OpenAI
 
 class LLM:
-def init(self, api_key, base_url=None, model_name=None):
+def __init__(self, api_key, base_url=None, model_name=None):
 self.client = OpenAI(api_key=api_key, base_url=base_url)
 self.default_model_name = model_name
 
