@@ -35,13 +35,13 @@ def recreate_slide_by_win32(ppt_path: str, save_path: str, indexs: list):
             )
             # Record the count of template slides
             count = prs.Slides.Count
-            print("当前页面数量：", prs.Slides.Count, count)
+            print("The number of current pages：", prs.Slides.Count, count)
             # Copy and paste the target slides
             for index in indexs:
                 prs.Slides(index + 1).Copy()
-                prs.Slides.Paste()  # Index=insert_index, 不填则默认在最后插入
-                print("当前页面数量：", prs.Slides.Count, count)
-                time.sleep(0.3)  # 防止复制过快导致丢失
+                prs.Slides.Paste()  # Index=insert_index, If you don't fill it in, it will be inserted at the end by default.
+                print("The number of current pages：", prs.Slides.Count, count)
+                time.sleep(0.3)  # Prevent loss caused by copying too fast
 
             # Delete template slides
             for _ in range(count):
