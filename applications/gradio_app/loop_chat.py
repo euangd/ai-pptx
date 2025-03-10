@@ -20,7 +20,7 @@ def llm_chat(
     return "Done!"
 
 def loop_chat_tab():
-    with gr.Tab("多轮对话"):
+    with gr.Tab("Multiple rounds of dialogue"):
         with gr.Row():
             with gr.Column(scale=3):
                 system_prompt = gr.Textbox(
