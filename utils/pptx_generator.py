@@ -28,8 +28,8 @@ class PptxGenerator:
             self.template_params = self._extract_params_from_template()
 
     def _extract_params_from_template(self):
-        """生成PPT文件"""
-        # 注意提取参数时，需要把模板PPT中的<组合>都解锁，不然可能存在找不到文本框的情况
+        """Generate PPT file"""
+        # Note that when extracting parameters, you need to unlock all <groups> in the template PPT, otherwise you may not find text boxes.
         start_slide_idx = 0
         catalogue_slide_idx = 1
         title_slide_idx = 2
@@ -43,7 +43,7 @@ class PptxGenerator:
             "end_slide": {"nos": [end_slide_idx], "params": []}
         }
 
-        # PPT中同一页的{params}定义必须不同，避免混淆，不同页面不做要求
+        # The {params} on the same page in PPT must be different to avoid confusion, no requirements for different pages
         for slide_name, slide_info in template_params.items():
             nos = slide_info["nos"]
             for n in nos:
@@ -59,7 +59,7 @@ class PptxGenerator:
         return template_params
 
     def llm_generate_online_content(self, topic: str):
-        """根据主题生成大纲"""
+        """Generate outline based on topic"""
         output_format = json.dumps(
             {
                 "topic": "str",
@@ -76,17 +76,17 @@ class PptxGenerator:
         # remove space to save token
         output_format = output_format.replace(" ", "")
         prompt = PromptLibrarian.read(path="ppt.generate_content.v1").format(topic=topic,
-                                                                             language="中文",
+                                                                             language="British English",
                                                                              output_format=output_format)
         messages = [
-            {"role": "system", "content": "你是个全能助手"},
+            {"role": "system", "content": "You are an all-capable assistant"},
             {"role": "user", "content": prompt}
         ]
         c = self.llm.chat_in_all(messages)
         if c[-1] != "}":
             logger.warning("[Continuous] Reply not end, go on ...")
             messages.append({"role": "assistant", "content": c})
-            messages.append({"role": "user", "content": "继续"})
+            messages.append({"role": "user", "content": "Continue"})
             c += self.llm.chat_in_all(messages)
         return c
 
@@ -118,13 +118,13 @@ class PptxGenerator:
         return None
 
     def llm_generate_content_slide_content(self, topic: str, online_content: str):
-        """根据大纲生成完整内容"""
+        """Generate complete content based on outline"""
         logger.info(f"online_content: \n{online_content}")
         online_content = json.loads(online_content)
         current_online_content = online_content["pages"]
         content_slide = self.template_params["content_slide"]
 
-        # 新增标题编号、子标题编号
+        # Add title number, subtitle number
         for idx, c in enumerate(current_online_content):
             c["no"] = idx + 1
         for c in current_online_content:
@@ -151,13 +151,13 @@ class PptxGenerator:
 ## TemplateParamsJson
 ```{tp}```
 # Tasks
-严格参照[Info.TemplateParamsJson]，基于《{topic}》中的`{title}`标题的内容，对应填充[Info.OnlineJson]，最后按照markdown的json格式输出。
-注意：json的key值严格对应[Info.TemplateParamsJson]，key对应的值不能存在列表或字典。
+Strictly follow [Info.TemplateParamsJson], based on the content of the `{title}` title in 《{topic}》, fill in [Info.OnlineJson] accordingly, and finally output according to the markdown json format.
+Note: The key values of json strictly correspond to [Info.TemplateParamsJson], and the values corresponding to keys cannot contain lists or dictionaries.
 ------
 output:"""
             ctx = self._llm_generate_content_slide_in_single(prompt, 0.6, tp)
             if ctx:
-                # 严格按照template参数匹配赋值
+                # Strictly match and assign values according to template parameters
                 for tk in tp.keys():
                     tp[tk] = ctx.get(tk, "")
                 time.sleep(2)
@@ -178,7 +178,7 @@ output:"""
         :param generation_content:
         :return:
         """
-        # 1. 根据模板新开ppt
+        # 1. Create a new ppt based on template
         logger.info(f"meta_info: {meta_info}")
         logger.info(f"generation_content: {generation_content}")
 
@@ -187,21 +187,21 @@ output:"""
         nos = generation_content["nos"]
 
         all_params = contents_param
-        # 插入首页内容和slide No
+        # Insert home page content and slide No
         all_params.insert(0, meta_info)
         nos.insert(0, self.template_params["first_slide"]["nos"][0])
-        # 插入目录页
+        # Insert directory page
         all_params.insert(1, titles_param)
         nos.insert(1, self.template_params["catalogue_slide"]["nos"][0])
-        # 插入结束页(在最后)
+        # Insert end page (at the end)
         all_params.append({})
         nos.append(self.template_params["end_slide"]["nos"][0])
 
-        # 2. 根据重排的slide No重新生成ppt
+        # 2. Regenerate ppt based on rearranged slide No
         logger.info(f"nos: {nos}")
         recreate_slide_by_win32(self.template_path, self.save_path, indexs=nos)
 
-        # 3. 在新ppt上，新增页并填充内容
+        # 3. Add pages and fill in content on new ppt
         new_ppt = pptx.Presentation(self.save_path)
         for idx, p_dict in enumerate(all_params):
             for shape in new_ppt.slides[idx].shapes:
@@ -213,11 +213,11 @@ output:"""
                                 m_key = match
                                 run.text = run.text.replace(m_str, str(p_dict.get(m_key, '')))
 
-        # 4. 保存PPT
+        # 4. Save PPT
         new_ppt.save(self.save_path)
 
     def generate(self, meta_info: dict):
-        """根据模板生成PPT"""
+        """Generate PPT according to template"""
         online_content = self.llm_generate_online_content(meta_info["topic"])
         generation_content = self.llm_generate_content_slide_content(meta_info["topic"], online_content)
         self.generate_ppt(meta_info, generation_content)
