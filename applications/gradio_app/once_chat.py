@@ -16,7 +16,7 @@ def llm_chat_once(
     return content
 
 def once_chat_tab():
-    with gr.Tab("单轮对话"):
+    with gr.Tab("Chat Once"):
         with gr.Row():
             with gr.Column(scale=4):
                 system_prompt = gr.Textbox(
